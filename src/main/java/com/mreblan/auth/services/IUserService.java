@@ -1,11 +1,11 @@
 package com.mreblan.auth.services;
 
+import org.springframework.security.core.userdetails.UserDetailsService;
+
 import com.mreblan.auth.entities.User;
-import com.mreblan.auth.requests.SignUpRequest;
 
-public interface IUserService {
+public interface IUserService extends UserDetailsService {
 
-    public User registerUser(SignUpRequest request);
     public User saveUser(User user);
     public User createUser(User user);
 }

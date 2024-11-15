@@ -14,40 +14,14 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import com.mreblan.auth.repositories.UserRepository;
+import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 
 @Data
 @RequiredArgsConstructor
 @Service
-public class UserServiceImpl implements IUserService, UserDetailsService {
+public class UserServiceImpl implements IUserService {
     private final UserRepository repository;
-    private final PasswordEncoder passwordEncoder;
-
-    @Override
-    public User registerUser(SignUpRequest request) {
-        if (repository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Пользователь с таким именем уже существует");
-        }
-
-        if (repository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Пользователь с таким email уже существует");
-        }
-
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-
-        User userToRegister = User.builder()
-                                .fio(request.getFio())
-                                .username(request.getUsername())
-                                .email(request.getEmail())
-                                .password(encodedPassword)
-                                .companyName(
-                                    request.getRole() == Role.CANDIDATE ? null : request.getCompanyName()
-                                )
-                                .role(request.getRole())
-                                .build();
-        
-        return saveUser(userToRegister);
-    }
 
     @Override
     public User saveUser(User user) {
@@ -55,7 +29,7 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
     }
 
     @Override
-    public User createUser(User user) {
+    public User createUser(User user) throws RuntimeException {
         if (repository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("Пользователь с таким именем уже существует");
         }
@@ -67,7 +41,7 @@ public class UserServiceImpl implements IUserService, UserDetailsService {
         return saveUser(user);
     }
 
-    public UserDetails loadByUsername(String username) {
+    public UserDetails loadUserByUsername(String username) {
         return repository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
     }

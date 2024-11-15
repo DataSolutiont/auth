@@ -5,5 +5,6 @@ import lombok.Getter;
 @Getter
 public enum Role {
     CANDIDATE,
-    HR
+    HR,
+    ADMIN
 }
