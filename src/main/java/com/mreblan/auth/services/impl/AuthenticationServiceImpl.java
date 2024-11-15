@@ -9,6 +9,7 @@ import com.mreblan.auth.entities.User;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
+import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IUserService;
 
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class AuthenticationServiceImpl implements IAuthenticationService {
     private final UserServiceImpl userService;
+    private final IJwtService     jwtService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -40,7 +42,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     }
 
     @Override
-    public User signIn(SignInRequest request) {
+    public String signIn(SignInRequest request) {
         User userToSignIn;
 
         try {
@@ -49,7 +51,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
 
 
             if (passwordEncoder.matches(request.getPassword(), userToSignIn.getPassword())) {
-                return userToSignIn;
+                return jwtService.generateToken(userToSignIn);
             } else {
 
                 log.error("PASSWORD ARE NOT CORRECT FOR USER WITH USERNAME: {}", userToSignIn.getUsername());

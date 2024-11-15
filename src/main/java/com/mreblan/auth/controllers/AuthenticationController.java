@@ -52,12 +52,12 @@ public class AuthenticationController {
     public ResponseEntity signInUser(@RequestBody SignInRequest request) {
         log.info("SIGN IN REQUEST: {}", request.toString());
 
-        User user = authService.signIn(request);
+        String token = authService.signIn(request);
 
-        if (user != null) {
+        if (token != null) {
             return ResponseEntity
                         .status(HttpStatus.OK)
-                        .body("Успешный вход");
+                        .body("Успешный вход\n" + token);
         } else {
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)

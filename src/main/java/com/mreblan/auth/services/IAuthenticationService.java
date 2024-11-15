@@ -6,5 +6,5 @@ import com.mreblan.auth.requests.SignUpRequest;
 
 public interface IAuthenticationService {
     public User signUp(SignUpRequest request);
-    public User signIn(SignInRequest request);
+    public String signIn(SignInRequest request);
 }

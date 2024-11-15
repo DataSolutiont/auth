@@ -9,6 +9,8 @@ import com.mreblan.auth.repositories.UserRepository;
 import com.mreblan.auth.services.IUserService;
 import com.mreblan.auth.services.impl.UserServiceImpl;
 
+import io.jsonwebtoken.Jwts;
+
 @Configuration
 public class AppConfig {
     
@@ -22,4 +24,9 @@ public class AppConfig {
     public IUserService userService(UserRepository repository) {
         return new UserServiceImpl(repository);
     }
+
+    // @Bean
+    // public Jwts jwts() {
+    //     return new Jwts();
+    // }
 }
