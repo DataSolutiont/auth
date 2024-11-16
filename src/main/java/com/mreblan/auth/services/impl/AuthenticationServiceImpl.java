@@ -67,4 +67,8 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             return null;
         } 
     }
+
+    public boolean checkToken(String token) {
+        return jwtService.isTokenValid(token);
+    }
 }

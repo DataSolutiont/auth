@@ -18,6 +18,9 @@ import com.mreblan.auth.services.IUserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Slf4j
 @RequiredArgsConstructor
@@ -64,4 +67,21 @@ public class AuthenticationController {
                         .body("Неверное имя пользователя или пароль");
         }
     }
+
+    @Deprecated
+    @PostMapping("/valid")
+    public ResponseEntity validateToken(@RequestBody String token) {
+        boolean result = authService.checkToken(token);
+
+        if (result) {
+            return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(result);
+        } else {
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(result);
+        }
+    }
+    
 }

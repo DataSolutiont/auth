@@ -1,15 +1,28 @@
 package com.mreblan.auth.services.impl;
 
+import java.security.Key;
 import java.util.Date;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.services.IJwtService;
+import com.sun.crypto.provider.HmacSHA1KeyGenerator;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,19 +39,40 @@ public class JwtServiceImpl implements IJwtService {
     
     @Override
     public String generateToken(User user) {
-        String jwt = Jwts.builder()
-                        .claim("username", user.getUsername())
-                        .claim("email", user.getEmail())
-                        .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                        .compact();
+        log.debug("GENERATE TOKEN");
+        Key key = makeSigningKey();
 
-        log.info("GENERATED JWT TOKEN: {}", jwt);
-
-        return jwt;
+        return Jwts.builder()
+                .subject(user.getUsername())
+                .claim("email", user.getEmail())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(key)
+                .compact();
     }
 
     @Override
-    public boolean checkToken(String token) {
-        return false;
+    public boolean isTokenValid(String token) {
+        log.debug("IS TOKEN VALID");
+        SecretKey key = (SecretKey) makeSigningKey();
+        
+        try {
+            Jws<Claims> claims = Jwts.parser()
+                                    .verifyWith(key)
+                                    .build()
+                                    .parseSignedClaims(token);
+
+            log.info("JWS CLAIMS: {}", claims.toString());
+
+            return true;
+        } catch (JwtException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private SecretKey makeSigningKey() {
+        byte[] keyBytes = this.secret.getBytes();
+        return new SecretKeySpec(keyBytes, io.jsonwebtoken.SignatureAlgorithm.HS256.getJcaName());
     }
 }
