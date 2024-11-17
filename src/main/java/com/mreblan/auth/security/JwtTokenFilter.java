@@ -13,8 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
-import com.mreblan.auth.services.IAuthenticationService;
-
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +33,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
+    @Autowired
+    public void setUserService(UserServiceImpl userService) {
+        this.userService = userService;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
@@ -50,12 +53,12 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             try {
                 username = jwtService.getUsernameFromJwt(jwt);
 
-            if (username != null && jwtService.isTokenValid(jwt)) {
-                User user = (User) userService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, null);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
-
+                if (username != null && jwtService.isTokenValid(jwt)) {
+                    log.info("USERNAME != NULL");
+                    var user = userService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             } catch (JwtException e) {
                 log.error("JWT EXCEPTION");
                 e.printStackTrace();

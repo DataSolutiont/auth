@@ -30,9 +30,18 @@ public class JwtServiceImpl implements IJwtService {
     
     @Override
     public String generateToken(User user) {
+
+        SecretKey key = makeSigningKey();
+
         String jwt = Jwts.builder()
-                        .claim("username", user.getUsername())
+                        .header()
+                            .type("JWT")
+                            .add("alg", "HS256")
+                            .and()
+                        .subject(user.getUsername())
+                        // .claim("username", user.getUsername())
                         .claim("email", user.getEmail())
+                        .signWith(key)
                         .expiration(new Date(System.currentTimeMillis() + expirationMs))
                         .compact();
 
@@ -49,6 +58,7 @@ public class JwtServiceImpl implements IJwtService {
         try {
             Jws<Claims> claims = Jwts.parser()
                                     .verifyWith(key)
+                                    .unsecured()
                                     .build()
                                     .parseSignedClaims(token);
 
