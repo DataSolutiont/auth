@@ -13,9 +13,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 
 import com.mreblan.auth.entities.User;
-import com.mreblan.auth.security.JwtTokenFilter;
+import com.mreblan.auth.repositories.UserRepository;
 import com.mreblan.auth.services.IUserService;
 import com.mreblan.auth.services.impl.UserServiceImpl;
+import com.mreblan.auth.security.JwtTokenFilter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,8 +34,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private JwtTokenFilter tokenFilter;
     private UserServiceImpl userService;
+    private JwtTokenFilter tokenFilter;
 
     public SecurityConfig() {}
 
@@ -43,14 +44,20 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
+    // @Bean
+    // @Primary
+    // public UserDetailsService userDetailsService(UserRepository repository) {
+    //     return new UserServiceImpl(repository);
+    // }
 
+    // @Bean
+    // public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    //     return authenticationConfiguration.getAuthenticationManager();
+    // }
+    //
     @Autowired
-    public void setTokenFilter(JwtTokenFilter filter) {
-        this.tokenFilter = filter;
+    public void setTokenFilter(JwtTokenFilter tokenFilter) {
+        this.tokenFilter = tokenFilter;
     }
 
     @Bean

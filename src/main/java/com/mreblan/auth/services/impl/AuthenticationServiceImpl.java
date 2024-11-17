@@ -10,7 +10,6 @@ import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
 import com.mreblan.auth.services.IJwtService;
-import com.mreblan.auth.services.IUserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,9 +65,5 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
 
             return null;
         } 
-    }
-
-    public boolean checkToken(String token) {
-        return jwtService.isTokenValid(token);
     }
 }

@@ -1,15 +1,11 @@
 package com.mreblan.auth.services.impl;
 
-import java.security.Key;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
@@ -19,10 +15,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -38,22 +30,21 @@ public class JwtServiceImpl implements IJwtService {
     
     @Override
     public String generateToken(User user) {
-        log.debug("GENERATE TOKEN");
-        Key key = makeSigningKey();
+        String jwt = Jwts.builder()
+                        .claim("username", user.getUsername())
+                        .claim("email", user.getEmail())
+                        .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                        .compact();
 
-        return Jwts.builder()
-                .subject(user.getUsername())
-                .claim("email", user.getEmail())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key)
-                .compact();
+        log.info("GENERATED JWT TOKEN: {}", jwt);
+
+        return jwt;
     }
 
     @Override
     public boolean isTokenValid(String token) {
         log.debug("IS TOKEN VALID");
-        SecretKey key = (SecretKey) makeSigningKey();
+        SecretKey key = makeSigningKey();
         
         try {
             Jws<Claims> claims = Jwts.parser()
@@ -71,10 +62,10 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public String getUsernameFromJwt(String token) {
+    public String getUsernameFromJwt(String token) throws JwtException {
         log.debug("GET USERNAME FROM JWT");
 
-        SecretKey key = (SecretKey) makeSigningKey();
+        SecretKey key = makeSigningKey();
 
         return Jwts.parser()
                 .verifyWith(key)

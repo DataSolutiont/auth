@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.mreblan.auth.repositories.UserRepository;
+import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IUserService;
+import com.mreblan.auth.services.impl.JwtServiceImpl;
 import com.mreblan.auth.services.impl.UserServiceImpl;
 
 import io.jsonwebtoken.Jwts;
@@ -19,10 +21,15 @@ public class AppConfig {
     //     return new BCryptPasswordEncoder();
     // }
     //
+    // @Bean
+    // @Autowired
+    // public IUserService userService(UserRepository repository) {
+    //     return new UserServiceImpl(repository);
+    // }
+
     @Bean
-    @Autowired
-    public IUserService userService(UserRepository repository) {
-        return new UserServiceImpl(repository);
+    public IJwtService jwtService() {
+        return new JwtServiceImpl();
     }
 
     // @Bean

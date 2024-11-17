@@ -5,7 +5,6 @@ import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 
 public interface IAuthenticationService {
-    public User   signUp(SignUpRequest request);
+    public User signUp(SignUpRequest request);
     public String signIn(SignInRequest request);
-    public boolean checkToken(String token);
 }
