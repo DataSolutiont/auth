@@ -2,6 +2,7 @@ package com.mreblan.auth.security;
 
 import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.impl.UserServiceImpl;
+import com.mreblan.auth.services.impl.JwtServiceImpl;
 
 import com.mreblan.auth.entities.User;
 
@@ -16,6 +17,7 @@ import com.mreblan.auth.services.IAuthenticationService;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -25,18 +27,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
     private IJwtService jwtService;
-    private IAuthenticationService authService;
+    // private IAuthenticationService authService;
     private UserServiceImpl userService;
+
+    @Autowired
+    public void setJwtService(JwtServiceImpl jwtService) {
+        this.jwtService = jwtService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
         
-        String header = request.getHeader("Authorizarion");
+        String header = request.getHeader("Authorization");
+        log.info("HEADER: {}", header);
         String username = null;
 
         if (header != null && header.startsWith("Bearer ")) {
             String jwt = header.substring(7);
+            log.info("JWT TOKEN: {}", jwt);
 
             try {
                 username = jwtService.getUsernameFromJwt(jwt);
