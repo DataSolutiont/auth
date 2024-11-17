@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.services.IJwtService;
-import com.sun.crypto.provider.HmacSHA1KeyGenerator;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -69,6 +68,22 @@ public class JwtServiceImpl implements IJwtService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public String getUsernameFromJwt(String token) {
+        log.debug("GET USERNAME FROM JWT");
+
+        SecretKey key = (SecretKey) makeSigningKey();
+
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+
+
     }
 
     private SecretKey makeSigningKey() {

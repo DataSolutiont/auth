@@ -1,7 +1,13 @@
 package com.mreblan.auth.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +35,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthenticationController {
     
     private final IAuthenticationService authService;
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    public void setAuthenticationManager(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager; 
+    }
     
     @PostMapping("/signup")
     public ResponseEntity signUpUser(@RequestBody SignUpRequest request) {
@@ -55,17 +67,18 @@ public class AuthenticationController {
     public ResponseEntity signInUser(@RequestBody SignInRequest request) {
         log.info("SIGN IN REQUEST: {}", request.toString());
 
-        String token = authService.signIn(request);
-
-        if (token != null) {
-            return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .body("Успешный вход\n" + token);
-        } else {
-            return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Неверное имя пользователя или пароль");
+        Authentication auth = null;
+        try {
+        auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверное имя пользователя или пароль");
         }
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        String jwt = authService.signIn(request);
+        return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(jwt);
     }
 
     @Deprecated
