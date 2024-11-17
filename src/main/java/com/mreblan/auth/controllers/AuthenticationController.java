@@ -17,6 +17,11 @@ import org.springframework.web.client.HttpClientErrorException.BadRequest;
 import org.springframework.http.HttpStatus;
 
 import com.mreblan.auth.entities.User;
+import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
+import com.mreblan.auth.exceptions.IllegalRoleException;
+import com.mreblan.auth.exceptions.InvalidSignInRequestException;
+import com.mreblan.auth.exceptions.InvalidSignUpRequestException;
+import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
@@ -45,17 +50,33 @@ public class AuthenticationController {
 
         log.info("SIGN UP REQUEST: {}", request.toString());
 
-
         try {
             authService.signUp(request);
-        } catch(RuntimeException e) {
+        } catch (InvalidSignUpRequestException e) {
             e.printStackTrace();
 
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Пользователь существует");
-        }
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Обязательные поля пусты");
+        } catch (UsernameAlreadyExistsException e) {
+            e.printStackTrace();
 
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Пользователь с таким именем уже существует");
+        } catch (EmailAlreadyExistsException e) {
+            e.printStackTrace();
+
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Пользователь с таким email уже существует");
+        } catch (IllegalRoleException e) {
+            e.printStackTrace();
+
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Роль указана неверно");
+        }
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body("Пользователь создан");
@@ -65,7 +86,17 @@ public class AuthenticationController {
     public ResponseEntity signInUser(@RequestBody SignInRequest request) {
         log.info("SIGN IN REQUEST: {}", request.toString());
 
-        String jwt = authService.signIn(request);
+        String jwt;
+
+        try {
+            jwt = authService.signIn(request);
+        } catch (InvalidSignInRequestException e) {
+            e.printStackTrace();
+
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Обязательные поля пусты");
+        }
 
         return ResponseEntity
                     .status(HttpStatus.OK)

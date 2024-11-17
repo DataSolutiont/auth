@@ -32,5 +32,5 @@ public class SignUpRequest {
     private String companyName;
 
     @NotBlank(message = "Необходимо указать роль пользователя")
-    private Role role;
+    private String role;
 }

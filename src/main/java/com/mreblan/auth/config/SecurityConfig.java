@@ -34,7 +34,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private UserServiceImpl userService;
+    // private UserServiceImpl userService;
     private JwtTokenFilter tokenFilter;
 
     public SecurityConfig() {}
@@ -77,6 +77,9 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests((requests) -> requests
                                             .requestMatchers("/api/auth/**").permitAll()
+                                            .requestMatchers("/swagger-ui/**").permitAll()
+                                            .requestMatchers("/swagger-resources/**").permitAll()
+                                            .requestMatchers("/v3/**").permitAll()
                                             .requestMatchers("/test/**").fullyAuthenticated()
                                             .anyRequest().authenticated()
                                 )

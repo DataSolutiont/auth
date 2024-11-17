@@ -13,6 +13,8 @@ import com.mreblan.auth.services.impl.UserServiceImpl;
 
 import io.jsonwebtoken.Jwts;
 
+import java.util.List;
+
 @Configuration
 public class AppConfig {
     
@@ -31,6 +33,7 @@ public class AppConfig {
     public IJwtService jwtService() {
         return new JwtServiceImpl();
     }
+
 
     // @Bean
     // public Jwts jwts() {

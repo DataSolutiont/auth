@@ -15,9 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -27,6 +31,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private IJwtService jwtService;
     // private IAuthenticationService authService;
     private UserServiceImpl userService;
+
+    private final RequestMatcher swaggerHtml = new AntPathRequestMatcher("/swagger-ui/index.html");
+    private final RequestMatcher swaggerV3 = new AntPathRequestMatcher("/v3/api-docs");
 
     @Autowired
     public void setJwtService(JwtServiceImpl jwtService) {
@@ -41,7 +48,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
-        
+
+        if (this.swaggerHtml.matches(request) || this.swaggerV3.matches(request)) {
+            log.info("SKIP");
+            log.info("REQUEST HEADER: {}", request.getHeaderNames().toString());
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
         log.info("HEADER: {}", header);
         String username = null;
@@ -63,6 +77,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 log.error("JWT EXCEPTION");
                 e.printStackTrace();
 
+                log.error("UNATHORIZED");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }

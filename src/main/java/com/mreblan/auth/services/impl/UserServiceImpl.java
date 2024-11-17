@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.entities.User;
+import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
+import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
 import com.mreblan.auth.services.IUserService;
 
 import lombok.Data;
@@ -31,11 +33,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public User createUser(User user) throws RuntimeException {
         if (repository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("Пользователь с таким именем уже существует");
+            throw new UsernameAlreadyExistsException("Пользователь с таким именем уже существует");
         }
 
         if (repository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Пользователь с таким email уже существует");
+            throw new EmailAlreadyExistsException("Пользователь с таким email уже существует");
         }
 
         return saveUser(user);

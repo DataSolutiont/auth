@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.entities.User;
+import com.mreblan.auth.exceptions.InvalidSignUpRequestException;
+import com.mreblan.auth.exceptions.IllegalRoleException;
+import com.mreblan.auth.exceptions.InvalidSignInRequestException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
@@ -25,6 +28,28 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     @Override
     public User signUp(SignUpRequest request) {
         String encodedPassword = passwordEncoder.encode(request.getPassword());
+        Role role;
+
+        log.info("ROLE IN REQUEST: {}", request.getRole());
+
+        if (
+        request.getUsername().equals("") ||
+        request.getPassword().equals("") ||
+        request.getEmail().equals("") ||
+        request.getRole().equals("")
+        ) {
+            throw new InvalidSignUpRequestException("Required args are null"); 
+        }
+
+        if (
+        !request.getRole().toUpperCase().equals("CANDIDATE") &&
+        !request.getRole().toUpperCase().equals("HR")        &&
+        !request.getRole().toUpperCase().equals("ADMIN")
+        ) {
+            throw new IllegalRoleException("Role in request is not identified");
+        }
+
+        role = Role.valueOf(request.getRole());
 
         User userToRegister = User.builder()
                                 .fio(request.getFio())
@@ -32,9 +57,9 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                                 .email(request.getEmail())
                                 .password(encodedPassword)
                                 .companyName(
-                                    request.getRole() == Role.CANDIDATE ? null : request.getCompanyName()
+                                    role == Role.CANDIDATE ? null : request.getCompanyName()
                                 )
-                                .role(request.getRole())
+                                .role(role)
                                 .build();
         
         return userService.createUser(userToRegister);
@@ -43,6 +68,10 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     @Override
     public String signIn(SignInRequest request) {
         User userToSignIn;
+
+        if (request.getUsername().equals("") || request.getPassword().equals("")) {
+            throw new InvalidSignInRequestException("Required args are null");
+        }
 
         try {
             userToSignIn = (User) userService.loadUserByUsername(request.getUsername());
