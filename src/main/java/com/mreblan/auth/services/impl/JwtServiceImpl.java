@@ -58,7 +58,7 @@ public class JwtServiceImpl implements IJwtService {
         try {
             Jws<Claims> claims = Jwts.parser()
                                     .verifyWith(key)
-                                    .unsecured()
+                                    // .unsecured()
                                     .build()
                                     .parseSignedClaims(token);
 

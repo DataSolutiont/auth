@@ -50,11 +50,11 @@ public class SecurityConfig {
     //     return new UserServiceImpl(repository);
     // }
 
-    // @Bean
-    // public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-    //     return authenticationConfiguration.getAuthenticationManager();
-    // }
-    //
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
     @Autowired
     public void setTokenFilter(JwtTokenFilter tokenFilter) {
         this.tokenFilter = tokenFilter;
@@ -77,7 +77,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests((requests) -> requests
                                             .requestMatchers("/api/auth/**").permitAll()
-                                            .requestMatchers("api/test").fullyAuthenticated()
+                                            .requestMatchers("/test/**").fullyAuthenticated()
                                             .anyRequest().authenticated()
                                 )
             .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
