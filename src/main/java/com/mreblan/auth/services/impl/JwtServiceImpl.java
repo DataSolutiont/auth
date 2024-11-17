@@ -39,7 +39,6 @@ public class JwtServiceImpl implements IJwtService {
                             .add("alg", "HS256")
                             .and()
                         .subject(user.getUsername())
-                        // .claim("username", user.getUsername())
                         .claim("email", user.getEmail())
                         .signWith(key)
                         .expiration(new Date(System.currentTimeMillis() + expirationMs))
