@@ -6,7 +6,7 @@ COPY . /auth_service
 RUN mvn clean
 RUN mvn package -DskipTests
 
-FROM openjdk:21 as final
+FROM openjdk:21 AS final
 COPY --from=stage1 /auth_service/target/*.jar app.jar
 EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
