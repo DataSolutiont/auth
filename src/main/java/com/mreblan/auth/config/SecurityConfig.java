@@ -80,7 +80,7 @@ public class SecurityConfig {
                                             .requestMatchers("/swagger-ui/**").permitAll()
                                             .requestMatchers("/swagger-resources/**").permitAll()
                                             .requestMatchers("/v3/**").permitAll()
-                                            .requestMatchers("/test/**").fullyAuthenticated()
+                                            .requestMatchers("/test/**").permitAll()
                                             .anyRequest().authenticated()
                                 )
             .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);

@@ -34,6 +34,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     private final RequestMatcher swaggerHtml = new AntPathRequestMatcher("/swagger-ui/index.html");
     private final RequestMatcher swaggerV3 = new AntPathRequestMatcher("/v3/api-docs");
+    private final RequestMatcher testFind = new AntPathRequestMatcher("/test/find");
+    private final RequestMatcher testRevoke = new AntPathRequestMatcher("/test/revoke");
+    private final RequestMatcher testDelete = new AntPathRequestMatcher("/test/delete");
 
     @Autowired
     public void setJwtService(JwtServiceImpl jwtService) {
@@ -49,7 +52,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-        if (this.swaggerHtml.matches(request) || this.swaggerV3.matches(request)) {
+        if (
+        this.swaggerHtml.matches(request) || 
+        this.swaggerV3.matches(request)   
+        ) {
             log.info("SKIP");
             log.info("REQUEST HEADER: {}", request.getHeaderNames().toString());
             response.setStatus(HttpServletResponse.SC_OK);
@@ -83,6 +89,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             }
         }
 
+        log.info("NEXT FILTERS");
         filterChain.doFilter(request, response);
     }
 }
