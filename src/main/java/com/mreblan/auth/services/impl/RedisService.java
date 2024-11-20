@@ -9,6 +9,7 @@ import com.mreblan.auth.services.ICacheService;
 import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IUserService;
 
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,24 +20,21 @@ public class RedisService implements ICacheService {
     
     private final IRedisRepository repository;
     private final IJwtService      jwtService;
-    private final UserServiceImpl     userService;
+    // private final UserServiceImpl     userService;
 
     @Override
     public void addTokenToCache(String token) {
-        String username = jwtService.getUsernameFromJwt(token);
-        Long id;
-
+        String username = null;
         try {
-            User user = (User) userService.loadUserByUsername(username);
-            id   = user.getId();
-        } catch (UsernameNotFoundException e) {
-            log.error("USER WITH NAME {} NOT FOUND", username);
-            e.printStackTrace();
-            return;
+            username = jwtService.getUsernameFromJwt(token);
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
         }
 
+        log.info("USERNAME: {}", username);
+
         if (
-        repository.findTokenByUsername(username, id) != null ||
+        repository.findTokenByUsername(username) != null ||
         isTokenInCache(token)
         ) {
             log.info("OLD TOKEN DELETED");
@@ -44,25 +42,23 @@ public class RedisService implements ICacheService {
         }
 
         log.info("TOKEN {} ADDED TO REVOKE CACHE", token);
-        repository.addToken(username, id, token);
+        repository.addToken(username, token);
     }
 
     @Override
     public boolean isTokenInCache(String token) {
         String result;
-        Long id;
 
-        String username = jwtService.getUsernameFromJwt(token);
-
+        String username = null;
         try {
-            id = getIdByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            log.error("USER WITH NAME {} NOT FOUND", username);
-            e.printStackTrace();
-            return false;
+            username = jwtService.getUsernameFromJwt(token);
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
         }
 
-        result = repository.findTokenByUsername(username, id);
+        log.info("USERNAME: {}", username);
+
+        result = repository.findTokenByUsername(username);
 
         log.info("RESULT FROM REDIS: {}", result);
         if (result != null && result.equals(token)) {
@@ -75,24 +71,16 @@ public class RedisService implements ICacheService {
 
     @Override
     public void deleteTokenFromCache(String token) {
-        Long id;
-        String username = jwtService.getUsernameFromJwt(token);
-
+        String username = null;
         try {
-            id = getIdByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            log.error("USER WITH NAME {} NOT FOUND", username);
-            e.printStackTrace();
-            return;
+            username = jwtService.getUsernameFromJwt(token);
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
         }
-        
+
+        log.info("USERNAME: {}", username);
+
         log.info("TOKEN {} DELETED FROM REVOKE CACHE", token);
-        repository.deleteTokenByUsername(username, id);
-    }
-
-    private Long getIdByUsername(String username) throws UsernameNotFoundException {
-        User user = (User) userService.loadUserByUsername(username);
-
-        return user.getId();
+        repository.deleteTokenByUsername(username);
     }
 }

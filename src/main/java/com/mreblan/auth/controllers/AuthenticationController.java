@@ -53,30 +53,41 @@ public class AuthenticationController {
         try {
             authService.signUp(request);
         } catch (InvalidSignUpRequestException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            
+            log.error("Required args are null");
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Обязательные поля пусты");
         } catch (UsernameAlreadyExistsException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            log.error("Username already exists");
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Пользователь с таким именем уже существует");
         } catch (EmailAlreadyExistsException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            log.error("Email already exists");
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Пользователь с таким email уже существует");
         } catch (IllegalRoleException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            
+            log.error("Illegal role provided");
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Роль указана неверно");
         }
+
+        log.info("New user with username --- {}  --- created!", request.getUsername());
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body("Пользователь создан");
@@ -93,10 +104,14 @@ public class AuthenticationController {
         } catch (InvalidSignInRequestException e) {
             e.printStackTrace();
 
+            log.error("Required args are null");
+
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Обязательные поля пусты");
         }
+
+        log.info("User with username --- {} --- signed in", request.getUsername());
 
         return ResponseEntity
                     .status(HttpStatus.OK)

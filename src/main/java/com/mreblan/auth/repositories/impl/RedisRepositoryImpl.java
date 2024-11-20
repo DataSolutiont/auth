@@ -1,47 +1,54 @@
 package com.mreblan.auth.repositories.impl;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
 
 import com.mreblan.auth.repositories.IRedisRepository;
 
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Repository
-@RedisHash
 public class RedisRepositoryImpl implements IRedisRepository {
 
-    private RedisTemplate<String, Object> redisTemplate;
-    private HashOperations hashOperations;
+    private StringRedisTemplate stringTemplate;
+    private ValueOperations valueOperations;
 
     @Autowired
-    public RedisRepositoryImpl(RedisTemplate<String, Object> redisTemplate){
-        this.redisTemplate = redisTemplate;
+    public RedisRepositoryImpl(StringRedisTemplate stringTemplate) {
+        this.stringTemplate = stringTemplate;
     }
 
     @PostConstruct
     public void init() {
-        hashOperations = redisTemplate.opsForHash();
+        valueOperations = stringTemplate.opsForValue();
     }
 
     @Override
-    public void addToken(String username, Long id, String token) {
-        hashOperations.put(username, id, token);
-
+    public void addToken(String username, String token) {
+        log.info("USERNAME AND TOKEN: {} \n{}", username, token);
+        valueOperations.set(username, token, 10, TimeUnit.MINUTES);
     }
 
     @Override
-    public void deleteTokenByUsername(String username, Long id) {
-        hashOperations.delete(username, id);
+    public void deleteTokenByUsername(String username) {
+        stringTemplate.delete(username);
     }
 
     @Override
-    public String findTokenByUsername(String username, Long id) {
-        return (String) hashOperations.get(username, id);
+    public String findTokenByUsername(String username) {
+        String result = (String) valueOperations.get(username);
+        log.info("RESULT: {}", result);
+        return (String) valueOperations.get(username);
     }
 }

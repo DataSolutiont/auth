@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericToStringSerializer;
 
 import com.mreblan.auth.repositories.UserRepository;
@@ -39,12 +40,17 @@ public class AppConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
-        RedisTemplate<String, Object> template = new RedisTemplate<String, Object>();
+    public RedisTemplate<String, String> redisTemplate() {
+        RedisTemplate<String, String> template = new RedisTemplate<String, String>();
         template.setConnectionFactory(jedisConnectionFactory());
         template.setValueSerializer(new GenericToStringSerializer<Object>(Object.class));
         return template;
     }
+
+    @Bean
+    public StringRedisTemplate stringRedisTemplate() {
+        return new StringRedisTemplate(jedisConnectionFactory());
+    } 
     
 
     @Bean

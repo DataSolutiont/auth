@@ -44,11 +44,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // @Bean
-    // @Primary
-    // public UserDetailsService userDetailsService(UserRepository repository) {
-    //     return new UserServiceImpl(repository);
-    // }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -77,13 +72,15 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests((requests) -> requests
                                             .requestMatchers("/api/auth/**").permitAll()
-                                            .requestMatchers("/swagger-ui/**").permitAll()
-                                            .requestMatchers("/swagger-resources/**").permitAll()
-                                            .requestMatchers("/v3/**").permitAll()
-                                            .requestMatchers("/test/**").permitAll()
+                                            .requestMatchers(
+                                                "/swagger-ui/**",
+                                                "/v3",
+                                                "/test/**"
+                                            ).permitAll()
                                             .anyRequest().authenticated()
                                 )
-            .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class)
+        ;
 
         return http.build();
     }

@@ -33,11 +33,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public User createUser(User user) throws RuntimeException {
         if (repository.existsByUsername(user.getUsername())) {
-            throw new UsernameAlreadyExistsException("Пользователь с таким именем уже существует");
+            throw new UsernameAlreadyExistsException("User with this username already exists");
         }
 
         if (repository.existsByEmail(user.getEmail())) {
-            throw new EmailAlreadyExistsException("Пользователь с таким email уже существует");
+            throw new EmailAlreadyExistsException("User with this email already exists");
         }
 
         return saveUser(user);
@@ -45,6 +45,6 @@ public class UserServiceImpl implements IUserService {
 
     public UserDetails loadUserByUsername(String username) {
         return repository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

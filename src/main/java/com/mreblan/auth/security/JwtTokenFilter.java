@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
@@ -32,11 +33,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     // private IAuthenticationService authService;
     private UserServiceImpl userService;
 
-    private final RequestMatcher swaggerHtml = new AntPathRequestMatcher("/swagger-ui/index.html");
-    private final RequestMatcher swaggerV3 = new AntPathRequestMatcher("/v3/api-docs");
-    private final RequestMatcher testFind = new AntPathRequestMatcher("/test/find");
-    private final RequestMatcher testRevoke = new AntPathRequestMatcher("/test/revoke");
-    private final RequestMatcher testDelete = new AntPathRequestMatcher("/test/delete");
+    // private final RequestMatcher swaggerHtml = new AntPathRequestMatcher("/swagger-ui/index.html");
+    // private final RequestMatcher swaggerV3 = new AntPathRequestMatcher("/v3/api-docs");
+    // private final RequestMatcher testFind = new AntPathRequestMatcher("/test/find");
+    // private final RequestMatcher testRevoke = new AntPathRequestMatcher("/test/revoke");
+    // private final RequestMatcher testDelete = new AntPathRequestMatcher("/test/delete");
 
     @Autowired
     public void setJwtService(JwtServiceImpl jwtService) {
@@ -52,15 +53,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-        if (
-        this.swaggerHtml.matches(request) || 
-        this.swaggerV3.matches(request)   
-        ) {
-            log.info("SKIP");
-            log.info("REQUEST HEADER: {}", request.getHeaderNames().toString());
-            response.setStatus(HttpServletResponse.SC_OK);
-            return;
-        }
+        // if (
+        // this.swaggerHtml.matches(request) || 
+        // this.swaggerV3.matches(request)   
+        // ) {
+        //     log.info("SKIP");
+        //     log.info("REQUEST HEADER: {}", request.getHeaderNames().toString());
+        //     response.setStatus(HttpServletResponse.SC_OK);
+        //     return;
+        // }
 
         String header = request.getHeader("Authorization");
         log.info("HEADER: {}", header);
@@ -91,5 +92,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         log.info("NEXT FILTERS");
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        log.info("SHOULD NOT FILTER");
+        return (
+        new AntPathMatcher().match("/swagger-ui/**", request.getServletPath()) ||
+        new AntPathMatcher().match("/v3/api-docs/**", request.getServletPath()) ||
+        new AntPathMatcher().match("/test/**", request.getServletPath()) 
+        );
     }
 }

@@ -7,8 +7,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mreblan.auth.services.impl.RedisService;
 
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("test")
@@ -24,14 +27,24 @@ public class TestController {
 
     @GetMapping("/revoke")
     public String revokeTokenTest(@RequestBody String token) {
-        redisService.addTokenToCache(token);
+        try {
+            redisService.addTokenToCache(token);
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
+            // return "ERROR";
+        }
 
         return "Token revoked";
     }
 
     @GetMapping("/delete")
     public String deleteTokenTest(@RequestBody String token) {
-        redisService.deleteTokenFromCache(token);
+        try {
+            redisService.deleteTokenFromCache(token);
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
+            // return "ERROR"
+        }
 
         return "Token deleted";
     }
@@ -39,10 +52,14 @@ public class TestController {
 
     @GetMapping("/find")
     public String findTokenTest(@RequestBody String token) {
-        if (redisService.isTokenInCache(token)) {
-            return "Token in cache";
+        boolean isValid = false;
+        try {
+            isValid = redisService.isTokenInCache(token);
+            return isValid ? "Token in cache" : "Token is not in cache";
+        } catch (JwtException e) {
+            log.error("JWT EXCEPTION");
         }
 
-        return "Token is not in cache";
+        return isValid ? "Token in cache" : "Token is not in cache";
     }
 }
