@@ -27,9 +27,12 @@ import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
 import com.mreblan.auth.services.IUserService;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@OpenAPIDefinition(info = @Info(title = "Authentication API", version = "v1"))
 @Slf4j
 @RequiredArgsConstructor
 @RestController
