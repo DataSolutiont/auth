@@ -1,22 +1,12 @@
 package com.mreblan.auth.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
-import org.springframework.http.HttpStatus;
 
-import com.mreblan.auth.entities.User;
 import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
 import com.mreblan.auth.exceptions.IllegalRoleException;
 import com.mreblan.auth.exceptions.InvalidSignInRequestException;
@@ -25,8 +15,9 @@ import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
-import com.mreblan.auth.services.IUserService;
+import com.mreblan.auth.services.IRevokeService;
 
+import io.jsonwebtoken.JwtException;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
@@ -40,12 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationController {
     
     private final IAuthenticationService authService;
-    // private AuthenticationManager authenticationManager;
-    //
-    // @Autowired
-    // public void setAuthenticationManager(AuthenticationManager authenticationManager) {
-    //     this.authenticationManager = authenticationManager; 
-    // }
+    private final IRevokeService revokeService; 
 
     
     @PostMapping("/signup")
@@ -119,5 +105,21 @@ public class AuthenticationController {
         return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(jwt);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity logoutUser(@RequestBody String token) {
+        try {
+            revokeService.revokeToken(token);        
+        } catch (JwtException e) {
+            log.error("JWT EXPIRED");
+
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Токен уже истёк");
+        }
+        return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("Токен отменён");
     }
 }

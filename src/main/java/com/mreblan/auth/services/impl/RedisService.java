@@ -1,12 +1,13 @@
 package com.mreblan.auth.services.impl;
 
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.repositories.IRedisRepository;
-import com.mreblan.auth.services.ICacheService;
 import com.mreblan.auth.services.IJwtService;
+import com.mreblan.auth.services.IRevokeService;
 import com.mreblan.auth.services.IUserService;
 
 import io.jsonwebtoken.JwtException;
@@ -16,29 +17,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class RedisService implements ICacheService {
+public class RedisService implements IRevokeService {
     
     private final IRedisRepository repository;
     private final IJwtService      jwtService;
     // private final UserServiceImpl     userService;
 
     @Override
-    public void addTokenToCache(String token) {
+    public void revokeToken(String token) throws JwtException {
         String username = null;
-        try {
-            username = jwtService.getUsernameFromJwt(token);
-        } catch (JwtException e) {
-            log.error("JWT EXCEPTION");
-        }
+        username = jwtService.getUsernameFromJwt(token);
 
         log.info("USERNAME: {}", username);
 
         if (
         repository.findTokenByUsername(username) != null ||
-        isTokenInCache(token)
+        isTokenRevoked(token)
         ) {
             log.info("OLD TOKEN DELETED");
-            deleteTokenFromCache(token);
+            unrevokeToken(token);
         }
 
         log.info("TOKEN {} ADDED TO REVOKE CACHE", token);
@@ -46,15 +43,11 @@ public class RedisService implements ICacheService {
     }
 
     @Override
-    public boolean isTokenInCache(String token) {
+    public boolean isTokenRevoked(String token) throws JwtException {
         String result;
 
         String username = null;
-        try {
-            username = jwtService.getUsernameFromJwt(token);
-        } catch (JwtException e) {
-            log.error("JWT EXCEPTION");
-        }
+        username = jwtService.getUsernameFromJwt(token);
 
         log.info("USERNAME: {}", username);
 
@@ -70,13 +63,9 @@ public class RedisService implements ICacheService {
     }
 
     @Override
-    public void deleteTokenFromCache(String token) {
+    public void unrevokeToken(String token) throws JwtException {
         String username = null;
-        try {
-            username = jwtService.getUsernameFromJwt(token);
-        } catch (JwtException e) {
-            log.error("JWT EXCEPTION");
-        }
+        username = jwtService.getUsernameFromJwt(token);
 
         log.info("USERNAME: {}", username);
 
