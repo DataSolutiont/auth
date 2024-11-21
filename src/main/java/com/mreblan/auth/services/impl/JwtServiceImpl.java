@@ -55,7 +55,7 @@ public class JwtServiceImpl implements IJwtService {
 
     @Override
     public boolean isTokenValid(String token) {
-        log.debug("IS TOKEN VALID");
+        log.info("IS TOKEN VALID");
         SecretKey key = makeSigningKey();
         
         try {
@@ -76,7 +76,7 @@ public class JwtServiceImpl implements IJwtService {
 
     @Override
     public String getUsernameFromJwt(String token) throws JwtException {
-        log.debug("GET USERNAME FROM JWT");
+        log.info("GET USERNAME FROM JWT");
 
         SecretKey key = makeSigningKey();
 
@@ -86,11 +86,10 @@ public class JwtServiceImpl implements IJwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
-
-
     }
 
     public String getIssuedAtFromJwt(String token) throws JwtException {
+        log.info("GET IAT FROM JWT");
         SecretKey key = makeSigningKey();
 
         Date dateFromJwt = Jwts.parser()

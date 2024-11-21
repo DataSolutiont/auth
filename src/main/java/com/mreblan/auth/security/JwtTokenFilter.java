@@ -1,11 +1,12 @@
 package com.mreblan.auth.security;
 
 import com.mreblan.auth.services.IJwtService;
+import com.mreblan.auth.services.IRevokeService;
 import com.mreblan.auth.services.impl.UserServiceImpl;
 import com.mreblan.auth.services.impl.JwtServiceImpl;
+import com.mreblan.auth.services.impl.RedisService;
 
-import com.mreblan.auth.entities.User;
-
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,13 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -30,19 +27,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
     private IJwtService jwtService;
-    // private IAuthenticationService authService;
     private UserServiceImpl userService;
+    private IRevokeService  revokeService;
 
-    // private final RequestMatcher swaggerHtml = new AntPathRequestMatcher("/swagger-ui/index.html");
-    // private final RequestMatcher swaggerV3 = new AntPathRequestMatcher("/v3/api-docs");
-    // private final RequestMatcher testFind = new AntPathRequestMatcher("/test/find");
-    // private final RequestMatcher testRevoke = new AntPathRequestMatcher("/test/revoke");
-    // private final RequestMatcher testDelete = new AntPathRequestMatcher("/test/delete");
 
     @Autowired
     public void setJwtService(JwtServiceImpl jwtService) {
         this.jwtService = jwtService;
     }
+
+    @Autowired
+    public void setRevokeService(RedisService revokeService) {
+        this.revokeService = revokeService;
+    } 
 
     @Autowired
     public void setUserService(UserServiceImpl userService) {
@@ -53,36 +50,48 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-        // if (
-        // this.swaggerHtml.matches(request) || 
-        // this.swaggerV3.matches(request)   
-        // ) {
-        //     log.info("SKIP");
-        //     log.info("REQUEST HEADER: {}", request.getHeaderNames().toString());
-        //     response.setStatus(HttpServletResponse.SC_OK);
-        //     return;
-        // }
-
+        // Получаем заголовок с авторизацией
         String header = request.getHeader("Authorization");
         log.info("HEADER: {}", header);
+        // Готовим переменные для проверки
         String username = null;
 
+        // Проверяем, есть ли заголовок
+        // и начинается ли он с Bearer
         if (header != null && header.startsWith("Bearer ")) {
+            // Получаем токен
             String jwt = header.substring(7);
+            jwt = jwt.trim();
+            jwt = jwt.replaceAll("[\\s]", "");
             log.info("JWT TOKEN: {}", jwt);
 
+            log.info("TOKEN CONTAINS SPACE: {}", jwt.contains(" "));
+
             try {
+                // Пытаемся распарсить токен
+                log.info("PARSING JWT");
                 username = jwtService.getUsernameFromJwt(jwt);
 
-                if (username != null && jwtService.isTokenValid(jwt)) {
+                // Если есть имя пользователя,
+                // токен валиден
+                // и токен не отменён (не найден в Redis)
+                if (
+                    username != null && 
+                    jwtService.isTokenValid(jwt) &&
+                    !revokeService.isTokenRevoked(jwt)
+                ) {
                     log.info("USERNAME != NULL");
+                    // Ищем пользователя с таким именем
                     var user = userService.loadUserByUsername(username);
+                    // Добавляем его в контекст
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
-            } catch (JwtException e) {
+            } catch (ExpiredJwtException e) {
+                // Если мы поймали исключение,
+                // то говорим, что пользователь не авторизован
                 log.error("JWT EXCEPTION");
-                e.printStackTrace();
+                log.error(e.getMessage());
 
                 log.error("UNATHORIZED");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -99,8 +108,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         log.info("SHOULD NOT FILTER");
         return (
         new AntPathMatcher().match("/swagger-ui/**", request.getServletPath()) ||
-        new AntPathMatcher().match("/v3/api-docs/**", request.getServletPath()) ||
-        new AntPathMatcher().match("/test/**", request.getServletPath()) 
+        new AntPathMatcher().match("/v3/api-docs/**", request.getServletPath()) //||
+        // new AntPathMatcher().match("/test/**", request.getServletPath()) 
         );
     }
 }

@@ -25,16 +25,31 @@ public class RedisService implements IRevokeService {
 
     @Override
     public void revokeToken(String token) throws JwtException {
-        String key = formKey(token);
+        String key = null;
+        try {
+            key = formKey(token);
+        } catch (JwtException e) {
+            log.info("REVOKE TOKEN");
+            log.error(e.getMessage());
+        }
 
-        repository.addToken(key, token);
+        if (key != null) {
+            repository.addToken(key, token);
+        }
     }
 
     @Override
     public boolean isTokenRevoked(String token) throws JwtException {
-        String key = formKey(token);
+        String key = null;
+        try {
+            log.info("IS TOKEN REVOKED FORMING");
+            key = formKey(token);
+        } catch (JwtException e) {
+            log.info("IS TOKEN REVOKED");
+            log.error(e.getMessage());
+        }
 
-        if (repository.findTokenByKey(key) != null) {
+        if (repository.findTokenByKey(key) != null && key != null) {
             return true;
         }
 
@@ -43,17 +58,28 @@ public class RedisService implements IRevokeService {
 
     @Override
     public void unrevokeToken(String token) throws JwtException {
-        String key = formKey(token);
+        String key = null;
+        try {
+            String key = formKey(token);
+        } catch (JwtException e) {
+            log.error(e.getMessage());
+        }
         
-        if (repository.findTokenByKey(key) != null) {
+        if (repository.findTokenByKey(key) != null && key != null) {
             repository.deleteTokenByKey(key);
         } else {
             log.error("Token is not revoked");
-            throw new TokenNotRevokedException("Token is not revoked");
+            // throw new TokenNotRevokedException("Token is not revoked");
         }
     }
 
     private String formKey(String token) {
-        return jwtService.getUsernameFromJwt(token) + jwtService.getIssuedAtFromJwt(token);
+        log.info("FORMING KEY");
+        log.info("TOKEN: {}", token);
+        token = token.trim();
+        token.replaceAll("[\\s]", "");
+        String username = jwtService.getUsernameFromJwt(token);
+        String iat      = jwtService.getIssuedAtFromJwt(token);
+        return username + iat;
     }
 }

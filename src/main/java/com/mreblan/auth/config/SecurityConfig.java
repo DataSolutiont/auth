@@ -65,14 +65,9 @@ public class SecurityConfig {
                                                 "/swagger-ui.html",
                                                 "swagger-ui/**",
                                                 "/v3/**",
-                                                "/test/**",
+                                                // "/test/**",
                                                 "/api-docs"
                                             ).permitAll()
-                                            // .requestMatchers(
-                                            //     "/swagger-ui/**",
-                                            //     "/v3",
-                                            //     "/test/**"
-                                            // ).permitAll()
                                             .anyRequest().authenticated()
                                 )
             .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class)
