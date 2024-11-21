@@ -1,11 +1,14 @@
 package com.mreblan.auth.services.impl;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
@@ -41,6 +44,7 @@ public class JwtServiceImpl implements IJwtService {
                         .subject(user.getUsername())
                         .claim("email", user.getEmail())
                         .signWith(key)
+                        .issuedAt(new Date())
                         .expiration(new Date(System.currentTimeMillis() + expirationMs))
                         .compact();
 
@@ -86,8 +90,33 @@ public class JwtServiceImpl implements IJwtService {
 
     }
 
+    public String getIssuedAtFromJwt(String token) throws JwtException {
+        SecretKey key = makeSigningKey();
+
+        Date dateFromJwt = Jwts.parser()
+                        .verifyWith(key)
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload()
+                        .getIssuedAt();
+
+        String result = parseDate(dateFromJwt);
+
+        log.info("TOKEN DATE: {}", result);
+
+        return result;
+                
+    }
+
     private SecretKey makeSigningKey() {
         byte[] keyBytes = this.secret.getBytes();
         return new SecretKeySpec(keyBytes, io.jsonwebtoken.SignatureAlgorithm.HS256.getJcaName());
+    }
+
+    private String parseDate(Date date) {
+        String pattern = "dd-MM-yy HH:mm:ss";
+        DateFormat dateFormat = new SimpleDateFormat(pattern);
+
+        return dateFormat.format(date);
     }
 }

@@ -35,20 +35,20 @@ public class RedisRepositoryImpl implements IRedisRepository {
     }
 
     @Override
-    public void addToken(String username, String token) {
-        log.info("USERNAME AND TOKEN: {} \n{}", username, token);
-        valueOperations.set(username, token, 10, TimeUnit.MINUTES);
+    public void addToken(String key, String token) {
+        log.info("USERNAME AND TOKEN: {} \n{}", key, token);
+        valueOperations.set(key, token, 10, TimeUnit.MINUTES);
     }
 
     @Override
-    public void deleteTokenByUsername(String username) {
-        stringTemplate.delete(username);
+    public void deleteTokenByKey(String key) {
+        stringTemplate.delete(key);
     }
 
     @Override
-    public String findTokenByUsername(String username) {
-        String result = (String) valueOperations.get(username);
+    public String findTokenByKey(String key) {
+        String result = (String) valueOperations.get(key);
         log.info("RESULT: {}", result);
-        return (String) valueOperations.get(username);
+        return result;
     }
 }

@@ -5,12 +5,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IRevokeService;
 import com.mreblan.auth.services.impl.RedisService;
 
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Slf4j
 @RequiredArgsConstructor
@@ -19,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final IRevokeService revokeService;
+    private final IJwtService jwtService;
     
     @Deprecated
     @GetMapping("/name")
@@ -49,8 +53,6 @@ public class TestController {
 
         return "Token deleted";
     }
-
-
     @GetMapping("/find")
     public String findTokenTest(@RequestBody String token) {
         boolean isValid = false;
@@ -63,4 +65,5 @@ public class TestController {
 
         return isValid ? "Token in cache" : "Token is not in cache";
     }
+
 }

@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.mreblan.auth.entities.User;
+import com.mreblan.auth.exceptions.TokenNotRevokedException;
 import com.mreblan.auth.repositories.IRedisRepository;
 import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IRevokeService;
@@ -21,55 +22,38 @@ public class RedisService implements IRevokeService {
     
     private final IRedisRepository repository;
     private final IJwtService      jwtService;
-    // private final UserServiceImpl     userService;
 
     @Override
     public void revokeToken(String token) throws JwtException {
-        String username = null;
-        username = jwtService.getUsernameFromJwt(token);
+        String key = formKey(token);
 
-        log.info("USERNAME: {}", username);
-
-        if (
-        repository.findTokenByUsername(username) != null ||
-        isTokenRevoked(token)
-        ) {
-            log.info("OLD TOKEN DELETED");
-            unrevokeToken(token);
-        }
-
-        log.info("TOKEN {} ADDED TO REVOKE CACHE", token);
-        repository.addToken(username, token);
+        repository.addToken(key, token);
     }
 
     @Override
     public boolean isTokenRevoked(String token) throws JwtException {
-        String result;
+        String key = formKey(token);
 
-        String username = null;
-        username = jwtService.getUsernameFromJwt(token);
-
-        log.info("USERNAME: {}", username);
-
-        result = repository.findTokenByUsername(username);
-
-        log.info("RESULT FROM REDIS: {}", result);
-        if (result != null && result.equals(token)) {
+        if (repository.findTokenByKey(key) != null) {
             return true;
-        } else {
-            return false;
         }
 
+        return false;
     }
 
     @Override
     public void unrevokeToken(String token) throws JwtException {
-        String username = null;
-        username = jwtService.getUsernameFromJwt(token);
+        String key = formKey(token);
+        
+        if (repository.findTokenByKey(key) != null) {
+            repository.deleteTokenByKey(key);
+        } else {
+            log.error("Token is not revoked");
+            throw new TokenNotRevokedException("Token is not revoked");
+        }
+    }
 
-        log.info("USERNAME: {}", username);
-
-        log.info("TOKEN {} DELETED FROM REVOKE CACHE", token);
-        repository.deleteTokenByUsername(username);
+    private String formKey(String token) {
+        return jwtService.getUsernameFromJwt(token) + jwtService.getIssuedAtFromJwt(token);
     }
 }
