@@ -29,7 +29,6 @@ public class RedisService implements IRevokeService {
         try {
             key = formKey(token);
         } catch (JwtException e) {
-            log.info("REVOKE TOKEN");
             log.error(e.getMessage());
         }
 
@@ -42,10 +41,8 @@ public class RedisService implements IRevokeService {
     public boolean isTokenRevoked(String token) throws JwtException {
         String key = null;
         try {
-            log.info("IS TOKEN REVOKED FORMING");
             key = formKey(token);
         } catch (JwtException e) {
-            log.info("IS TOKEN REVOKED");
             log.error(e.getMessage());
         }
 
@@ -60,7 +57,7 @@ public class RedisService implements IRevokeService {
     public void unrevokeToken(String token) throws JwtException {
         String key = null;
         try {
-            String key = formKey(token);
+            key = formKey(token);
         } catch (JwtException e) {
             log.error(e.getMessage());
         }
@@ -69,17 +66,11 @@ public class RedisService implements IRevokeService {
             repository.deleteTokenByKey(key);
         } else {
             log.error("Token is not revoked");
-            // throw new TokenNotRevokedException("Token is not revoked");
+            throw new TokenNotRevokedException("Token is not revoked");
         }
     }
 
     private String formKey(String token) {
-        log.info("FORMING KEY");
-        log.info("TOKEN: {}", token);
-        token = token.trim();
-        token.replaceAll("[\\s]", "");
-        String username = jwtService.getUsernameFromJwt(token);
-        String iat      = jwtService.getIssuedAtFromJwt(token);
-        return username + iat;
+        return jwtService.getUsernameFromJwt(token) + jwtService.getIssuedAtFromJwt(token);
     }
 }

@@ -43,15 +43,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             // Получаем токен
             String jwt = header.substring(7);
-            jwt = jwt.trim();
-            jwt = jwt.replaceAll("[\\s]", "");
-            log.info("JWT TOKEN: {}", jwt);
-
-            log.info("TOKEN CONTAINS SPACE: {}", jwt.contains(" "));
 
             try {
                 // Пытаемся распарсить токен
-                log.info("PARSING JWT");
                 username = jwtService.getUsernameFromJwt(jwt);
 
                 // Если есть имя пользователя,

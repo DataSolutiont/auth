@@ -8,6 +8,7 @@ import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.exceptions.InvalidSignUpRequestException;
 import com.mreblan.auth.exceptions.IllegalRoleException;
+import com.mreblan.auth.exceptions.IncorrectPasswordException;
 import com.mreblan.auth.exceptions.InvalidSignInRequestException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
@@ -73,26 +74,17 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new InvalidSignInRequestException("Required args are null");
         }
 
-        try {
-            userToSignIn = (User) userService.loadUserByUsername(request.getUsername());
-            log.info("USER TO SIGN IN: {}", userToSignIn.toString());
+        userToSignIn = (User) userService.loadUserByUsername(request.getUsername());
+        log.info("USER TO SIGN IN: {}", userToSignIn.toString());
 
 
-            if (passwordEncoder.matches(request.getPassword(), userToSignIn.getPassword())) {
-                return jwtService.generateToken(userToSignIn);
-            } else {
+        if (passwordEncoder.matches(request.getPassword(), userToSignIn.getPassword())) {
+            return jwtService.generateToken(userToSignIn);
+        } else {
 
-                log.error("PASSWORD ARE NOT CORRECT FOR USER WITH USERNAME: {}", userToSignIn.getUsername());
+            log.error("PASSWORD ARE NOT CORRECT FOR USER WITH USERNAME: {}", userToSignIn.getUsername());
 
-                return null;
-            }
-
-        } catch (UsernameNotFoundException e) {
-            e.printStackTrace();
-
-            log.error("USER WITH USERNAME - {} - NOT FOUND", request.getUsername());
-
-            return null;
-        } 
+            throw new IncorrectPasswordException("Password is incorrect");
+        }
     }
 }

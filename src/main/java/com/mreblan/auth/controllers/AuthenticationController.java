@@ -2,6 +2,7 @@ package com.mreblan.auth.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
 import com.mreblan.auth.exceptions.IllegalRoleException;
+import com.mreblan.auth.exceptions.IncorrectPasswordException;
 import com.mreblan.auth.exceptions.InvalidSignInRequestException;
 import com.mreblan.auth.exceptions.InvalidSignUpRequestException;
 import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
@@ -17,7 +19,7 @@ import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.services.IAuthenticationService;
 import com.mreblan.auth.services.IRevokeService;
 
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
@@ -98,6 +100,18 @@ public class AuthenticationController {
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Обязательные поля пусты");
+        } catch (UsernameNotFoundException e) {
+            log.error(e.getMessage());
+
+            return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Пользователь с таким именем не найден");
+        } catch (IncorrectPasswordException e) {
+            log.error(e.getMessage());
+
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Неверный пароль");
         }
 
         log.info("User with username --- {} --- signed in", request.getUsername());
@@ -111,13 +125,15 @@ public class AuthenticationController {
     public ResponseEntity logoutUser(@RequestBody String token) {
         try {
             revokeService.revokeToken(token);        
-        } catch (JwtException e) {
-            log.error("JWT EXPIRED");
+        } catch (ExpiredJwtException e) {
+            log.error("JWT EXPIRED: {}", e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body("Токен уже истёк");
         }
+        log.info("TOKEN --- {} --- WAS REVOKED", token);
+
         return ResponseEntity
                     .status(HttpStatus.OK)
                     .body("Токен отменён");
