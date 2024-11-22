@@ -1,13 +1,8 @@
 package com.mreblan.auth.repositories.impl;
 
-import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisHash;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
@@ -23,6 +18,7 @@ public class RedisRepositoryImpl implements IRedisRepository {
 
     private StringRedisTemplate stringTemplate;
     private ValueOperations valueOperations;
+    private final long TTL = 10;
 
     @Autowired
     public RedisRepositoryImpl(StringRedisTemplate stringTemplate) {
@@ -37,7 +33,7 @@ public class RedisRepositoryImpl implements IRedisRepository {
     @Override
     public void addToken(String key, String token) {
         log.info("USERNAME AND TOKEN: {} \n{}", key, token);
-        valueOperations.set(key, token, 10, TimeUnit.MINUTES);
+        valueOperations.set(key, token, TTL, TimeUnit.MINUTES);
     }
 
     @Override

@@ -2,8 +2,6 @@ package com.mreblan.auth.requests;
 
 import org.springframework.stereotype.Component;
 
-import com.mreblan.auth.entities.Role;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

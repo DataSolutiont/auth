@@ -1,12 +1,9 @@
 package com.mreblan.auth.services.impl;
 
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
 import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
@@ -16,8 +13,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import com.mreblan.auth.repositories.UserRepository;
-import com.mreblan.auth.requests.SignInRequest;
-import com.mreblan.auth.requests.SignUpRequest;
 
 @Data
 @RequiredArgsConstructor

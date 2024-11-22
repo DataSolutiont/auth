@@ -3,20 +3,17 @@ package com.mreblan.auth.security;
 import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IRevokeService;
 import com.mreblan.auth.services.impl.UserServiceImpl;
-import com.mreblan.auth.services.impl.JwtServiceImpl;
-import com.mreblan.auth.services.impl.RedisService;
 
 import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -24,27 +21,12 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
-    private IJwtService jwtService;
-    private UserServiceImpl userService;
-    private IRevokeService  revokeService;
-
-
-    @Autowired
-    public void setJwtService(JwtServiceImpl jwtService) {
-        this.jwtService = jwtService;
-    }
-
-    @Autowired
-    public void setRevokeService(RedisService revokeService) {
-        this.revokeService = revokeService;
-    } 
-
-    @Autowired
-    public void setUserService(UserServiceImpl userService) {
-        this.userService = userService;
-    }
+    private final IJwtService jwtService;
+    private final UserServiceImpl userService;
+    private final IRevokeService  revokeService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
