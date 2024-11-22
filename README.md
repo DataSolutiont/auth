@@ -244,5 +244,5 @@ docker compose up --build
 docker compose up
 ```
 
->[!info] 
+> [!NOTE] 
 > Все данные сохраняются при остановке контейнеров
