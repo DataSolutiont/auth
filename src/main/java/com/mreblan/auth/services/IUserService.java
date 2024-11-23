@@ -8,4 +8,5 @@ public interface IUserService extends UserDetailsService {
 
     public User saveUser(User user);
     public User createUser(User user);
+    public String loadPasswordByUsername(String username);
 }

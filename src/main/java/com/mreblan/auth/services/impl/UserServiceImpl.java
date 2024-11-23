@@ -1,5 +1,6 @@
 package com.mreblan.auth.services.impl;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -38,8 +39,19 @@ public class UserServiceImpl implements IUserService {
         return saveUser(user);
     }
 
+    @Override
+    @Cacheable(value = "userPasswordCache", key = "#username")
+    public String loadPasswordByUsername(String username) {
+        User user = repository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return user.getPassword();
+    }
+
+    @Cacheable(value = "userCache", key = "#username")
     public UserDetails loadUserByUsername(String username) {
         return repository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
+
 }
