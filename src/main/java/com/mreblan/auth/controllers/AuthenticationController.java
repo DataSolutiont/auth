@@ -16,6 +16,9 @@ import com.mreblan.auth.exceptions.InvalidSignUpRequestException;
 import com.mreblan.auth.exceptions.UsernameAlreadyExistsException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
+import com.mreblan.auth.requests.ValidateTokenRequest;
+import com.mreblan.auth.responses.Response;
+import com.mreblan.auth.responses.SignInResponse;
 import com.mreblan.auth.services.IAuthenticationService;
 import com.mreblan.auth.services.IRevokeService;
 
@@ -37,55 +40,47 @@ public class AuthenticationController {
 
     
     @PostMapping("/signup")
-    public ResponseEntity signUpUser(@RequestBody SignUpRequest request) {
+    public ResponseEntity<Response> signUpUser(@RequestBody SignUpRequest request) {
 
         log.info("SIGN UP REQUEST: {}", request.toString());
 
         try {
             authService.signUp(request);
         } catch (InvalidSignUpRequestException e) {
-            // e.printStackTrace();
-            
-            log.error("Required args are null");
+            log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Обязательные поля пусты");
+                        .body(new Response(false, "Обязательные поля пусты"));
         } catch (UsernameAlreadyExistsException e) {
-            // e.printStackTrace();
-
-            log.error("Username already exists");
+            log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Пользователь с таким именем уже существует");
+                        .body(new Response(false, "Пользователь с таким именем уже существует"));
         } catch (EmailAlreadyExistsException e) {
-            // e.printStackTrace();
-
-            log.error("Email already exists");
+            log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Пользователь с таким email уже существует");
+                        .body(new Response(false, "Пользователь с таким email уже существует"));
         } catch (IllegalRoleException e) {
-            // e.printStackTrace();
-            
-            log.error("Illegal role provided");
+            log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Роль указана неверно");
+                        .body(new Response(false, "Роль указана неверно"));
         }
 
         log.info("New user with username --- {}  --- created!", request.getUsername());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body("Пользователь создан");
+                .body(new Response(true, "Пользователь создан"));
     }
 
     @PostMapping("/signin")
-    public ResponseEntity signInUser(@RequestBody SignInRequest request) {
+    public ResponseEntity<SignInResponse> signInUser(@RequestBody SignInRequest request) {
         log.info("SIGN IN REQUEST: {}", request.toString());
 
         String jwt;
@@ -93,36 +88,34 @@ public class AuthenticationController {
         try {
             jwt = authService.signIn(request);
         } catch (InvalidSignInRequestException e) {
-            e.printStackTrace();
-
-            log.error("Required args are null");
+            log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Обязательные поля пусты");
+                        .body(new SignInResponse(false, "Обязательные поля пусты", ""));
         } catch (UsernameNotFoundException e) {
             log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.NOT_FOUND)
-                        .body("Пользователь с таким именем не найден");
+                        .body(new SignInResponse(false, "Пользователь с таким именем не найден", ""));
         } catch (IncorrectPasswordException e) {
             log.error(e.getMessage());
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Неверный пароль");
+                        .body(new SignInResponse(false, "Неверный пароль", ""));
         }
 
         log.info("User with username --- {} --- signed in", request.getUsername());
 
         return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(jwt);
+                    .body(new SignInResponse(true, "Успешно", jwt));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity logoutUser(@RequestBody String token) {
+    public ResponseEntity<Response> logoutUser(@RequestBody String token) {
         try {
             revokeService.revokeToken(token);        
         } catch (ExpiredJwtException e) {
@@ -130,12 +123,25 @@ public class AuthenticationController {
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Токен уже истёк");
+                        .body(new Response(false, "Токен уже истёк"));
         }
         log.info("TOKEN --- {} --- WAS REVOKED", token);
 
         return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body("Токен отменён");
+                    .body(new Response(true, "Токен отменён"));
+    }
+
+    @PostMapping("/validateToken")
+    public ResponseEntity<Response> validateToken(@RequestBody ValidateTokenRequest request) {
+        if (authService.validateToken(request.getToken())) {
+            return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new Response(true, "Токен валиден"));
+        }
+
+        return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new Response(false, "Токен не валиден или отменён"));
     }
 }

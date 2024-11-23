@@ -12,8 +12,10 @@ import com.mreblan.auth.exceptions.IncorrectPasswordException;
 import com.mreblan.auth.exceptions.InvalidSignInRequestException;
 import com.mreblan.auth.requests.SignInRequest;
 import com.mreblan.auth.requests.SignUpRequest;
+import com.mreblan.auth.requests.ValidateTokenRequest;
 import com.mreblan.auth.services.IAuthenticationService;
 import com.mreblan.auth.services.IJwtService;
+import com.mreblan.auth.services.IRevokeService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationServiceImpl implements IAuthenticationService {
     private final UserServiceImpl userService;
     private final IJwtService     jwtService;
+    private final IRevokeService  revokeService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -86,5 +89,16 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
 
             throw new IncorrectPasswordException("Password is incorrect");
         }
+    }
+
+    public boolean validateToken(String token) {
+        if (
+            jwtService.isTokenValid(token) &&
+            !revokeService.isTokenRevoked(token)
+        ) {
+            return true;
+        }
+
+        return false;
     }
 }
