@@ -28,19 +28,29 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
 
     @Override
     public User signUp(SignUpRequest request) {
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        Role role;
-
-        log.info("ROLE IN REQUEST: {}", request.getRole());
+        if (
+            request.getUsername() == null ||
+            request.getPassword() == null ||
+            request.getEmail()    == null ||
+            request.getRole()     == null
+        ) {
+            throw new InvalidSignUpRequestException("Required args are null");
+        }
 
         if (
-        request.getUsername().equals("") ||
-        request.getPassword().equals("") ||
-        request.getEmail().equals("") ||
-        request.getRole().equals("")
+            request.getUsername().equals("") ||
+            request.getPassword().equals("") ||
+            request.getEmail().equals("") ||
+            request.getRole().equals("")
         ) {
             throw new InvalidSignUpRequestException("Required args are null"); 
         }
+
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        Role role;
+
+        // log.info("ROLE IN REQUEST: {}", request.getRole());
+
 
         if (
         !request.getRole().toUpperCase().equals("CANDIDATE") &&
@@ -70,7 +80,17 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public String signIn(SignInRequest request) {
         User userToSignIn;
 
-        if (request.getUsername().equals("") || request.getPassword().equals("")) {
+        if (
+            request.getUsername() == null ||
+            request.getPassword() == null
+        ) {
+            throw new InvalidSignInRequestException("Required args are null");
+        }
+
+        if (
+            request.getUsername().equals("") ||
+            request.getPassword().equals("")
+        ) {
             throw new InvalidSignInRequestException("Required args are null");
         }
 

@@ -81,7 +81,7 @@ public class AuthenticationController {
         log.info("New user with username --- {}  --- created!", request.getUsername());
 
         return ResponseEntity
-                .status(HttpStatus.OK)
+                .status(HttpStatus.CREATED)
                 .body(new Response(true, "Пользователь создан"));
     }
 
@@ -123,6 +123,18 @@ public class AuthenticationController {
     @PostMapping("/logout")
     public ResponseEntity<Response> logoutUser(@RequestBody LogoutRequest request) {
         String token = request.getToken();
+
+        if (token == null) {
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(new Response(false, "В запросе отсутствует токен"));
+        }
+
+        if (revokeService.isTokenRevoked(token)) {
+            return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(new Response(false, "Токен уже отменён"));
+        }
 
         try {
             revokeService.revokeToken(token);        

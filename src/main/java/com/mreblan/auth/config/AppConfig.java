@@ -20,13 +20,13 @@ public class AppConfig {
         return new JedisConnectionFactory(redisStandaloneConfiguration);
     }
 
-    @Bean
-    public RedisTemplate<String, String> redisTemplate() {
-        RedisTemplate<String, String> template = new RedisTemplate<String, String>();
-        template.setConnectionFactory(jedisConnectionFactory());
-        template.setValueSerializer(new GenericToStringSerializer<Object>(Object.class));
-        return template;
-    }
+    // @Bean
+    // public RedisTemplate<String, String> redisTemplate() {
+    //     RedisTemplate<String, String> template = new RedisTemplate<String, String>();
+    //     template.setConnectionFactory(jedisConnectionFactory());
+    //     template.setValueSerializer(new GenericToStringSerializer<Object>(Object.class));
+    //     return template;
+    // }
 
     @Bean
     public StringRedisTemplate stringRedisTemplate() {

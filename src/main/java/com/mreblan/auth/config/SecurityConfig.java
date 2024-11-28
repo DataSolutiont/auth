@@ -26,7 +26,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // private UserServiceImpl userService;
     private final JwtTokenFilter tokenFilter;
 
     @Bean

@@ -28,9 +28,6 @@ public class JwtServiceImpl implements IJwtService {
     @Value("${auth.jwt.expirationMs}")
     private  long   expirationMs;
 
-    // @Autowired
-    // private Jwts jwts;
-    
     @Override
     public String generateToken(User user) {
 
