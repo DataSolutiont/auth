@@ -24,7 +24,12 @@ import com.mreblan.auth.services.IRevokeService;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,8 +45,32 @@ public class AuthenticationController {
 
     
     @PostMapping("/signup")
+    @Operation(summary = "Register user in system",
+        description = "Creates new user in database"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "201",
+            description = "Successful registration",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": true, \"description\": \"Пользователь создан\"}"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "400",
+            description = "Something went wrong during registration",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"Пользователь с таким именем уже существует\"}"
+                    )
+                )
+            )
+        }
+    )
     public ResponseEntity<Response> signUpUser(@RequestBody SignUpRequest request) {
-
         log.info("SIGN UP REQUEST: {}", request.toString());
 
         try {
@@ -75,6 +104,7 @@ public class AuthenticationController {
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
+                        .header("Vary", "Access-Control-Allow-*")
                         .body(new Response(false, "Роль указана неверно"));
         }
 
@@ -85,6 +115,41 @@ public class AuthenticationController {
                 .body(new Response(true, "Пользователь создан"));
     }
 
+
+    @Operation(summary = "Sign in",
+        description = "Finds user in database with username and password"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200",
+            description = "Successful registration",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": true, \"description\": \"Успешный вход\", \"token\": \"<JWT-token>\"}"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "400",
+            description = "Required args are null or invalid",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"Обязательные поля пусты\", \"token\": \"\"}"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "404",
+            description = "User with this username not found",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"Пользователь с таким именем не найден\", \"token\": \"\"}"
+                    )
+                )
+            )
+        }
+    )
     @PostMapping("/signin")
     public ResponseEntity<SignInResponse> signInUser(@RequestBody SignInRequest request) {
         log.info("SIGN IN REQUEST: {}", request.toString());
@@ -120,6 +185,33 @@ public class AuthenticationController {
                     .body(new SignInResponse(true, "Успешный вход", jwt));
     }
 
+    
+    @Operation(summary = "Logout",
+        description = "Revoke user's token"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200",
+            description = "Token revoked",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": true, \"description\": \"Токен отменён\" }"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "400",
+            description = "Token expired, not provided or already revoked",
+
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"В запросе отсутствует токен\" }"
+                    )
+                )
+            )
+        }
+    )
     @PostMapping("/logout")
     public ResponseEntity<Response> logoutUser(@RequestBody LogoutRequest request) {
         String token = request.getToken();

@@ -30,6 +30,7 @@ public class TestController {
         return "TEST NAME";
     }
 
+    @Deprecated
     @GetMapping("/revoke")
     public String revokeTokenTest(@RequestBody String token) {
         try {
@@ -42,6 +43,7 @@ public class TestController {
         return "Token revoked";
     }
 
+    @Deprecated
     @GetMapping("/delete")
     public String deleteTokenTest(@RequestBody String token) {
         try {
@@ -53,6 +55,8 @@ public class TestController {
 
         return "Token deleted";
     }
+
+    @Deprecated
     @GetMapping("/find")
     public String findTokenTest(@RequestBody String token) {
         boolean isValid = false;
