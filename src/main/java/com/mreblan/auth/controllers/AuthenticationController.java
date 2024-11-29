@@ -104,7 +104,6 @@ public class AuthenticationController {
 
             return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .header("Vary", "Access-Control-Allow-*")
                         .body(new Response(false, "Роль указана неверно"));
         }
 
