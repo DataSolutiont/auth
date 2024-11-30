@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.entities.User;
 import com.mreblan.auth.services.IJwtService;
 
@@ -104,6 +105,18 @@ public class JwtServiceImpl implements IJwtService {
 
         return result;
                 
+    }
+
+    public Role getRoleFromJwt(String token) {
+        SecretKey key = makeSigningKey();
+        String roleStr = (String) Jwts.parser()
+                                .verifyWith(key)
+                                .build()
+                                .parseSignedClaims(token)
+                                .getPayload()
+                                .get("role");
+
+        return Role.valueOf(roleStr);
     }
 
     private SecretKey makeSigningKey() {

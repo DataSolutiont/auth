@@ -3,11 +3,14 @@ package com.mreblan.auth.controllers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mreblan.auth.entities.Role;
 import com.mreblan.auth.exceptions.EmailAlreadyExistsException;
 import com.mreblan.auth.exceptions.IllegalRoleException;
 import com.mreblan.auth.exceptions.IncorrectPasswordException;
@@ -20,9 +23,11 @@ import com.mreblan.auth.requests.SignUpRequest;
 import com.mreblan.auth.responses.Response;
 import com.mreblan.auth.responses.SignInResponse;
 import com.mreblan.auth.services.IAuthenticationService;
+import com.mreblan.auth.services.IJwtService;
 import com.mreblan.auth.services.IRevokeService;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -41,17 +46,18 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationController {
     
     private final IAuthenticationService authService;
-    private final IRevokeService revokeService; 
+    private final IRevokeService         revokeService; 
+    private final IJwtService            jwtService;
 
     
     @PostMapping("/signup")
-    @Operation(summary = "Register user in system",
-        description = "Creates new user in database"
+    @Operation(summary = "Регистрация",
+        description = "Регистрирует пользователя в системе"
     )
     @ApiResponses(
         value = {
             @ApiResponse(responseCode = "201",
-            description = "Successful registration",
+            description = "Успешная регистрация",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -60,7 +66,7 @@ public class AuthenticationController {
                 )
             ),
             @ApiResponse(responseCode = "400",
-            description = "Something went wrong during registration",
+            description = "При регистрации что-то пошло не так",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -115,13 +121,13 @@ public class AuthenticationController {
     }
 
 
-    @Operation(summary = "Sign in",
-        description = "Finds user in database with username and password"
+    @Operation(summary = "Вход в аккаунт",
+        description = "Находит пользователя в БД и сверяет данные. Возвращает JWT-токен"
     )
     @ApiResponses(
         value = {
             @ApiResponse(responseCode = "200",
-            description = "Successful registration",
+            description = "Успешный вход",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -130,7 +136,7 @@ public class AuthenticationController {
                 )
             ),
             @ApiResponse(responseCode = "400",
-            description = "Required args are null or invalid",
+            description = "Обязательные поля пусты",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -139,7 +145,7 @@ public class AuthenticationController {
                 )
             ),
             @ApiResponse(responseCode = "404",
-            description = "User with this username not found",
+            description = "Не найден пользователь с таким именем",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -185,13 +191,13 @@ public class AuthenticationController {
     }
 
     
-    @Operation(summary = "Logout",
-        description = "Revoke user's token"
+    @Operation(summary = "Выход из аккаунта",
+        description = "Отменяет токен пользователя"
     )
     @ApiResponses(
         value = {
             @ApiResponse(responseCode = "200",
-            description = "Token revoked",
+            description = "Токен отменён",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
@@ -200,7 +206,7 @@ public class AuthenticationController {
                 )
             ),
             @ApiResponse(responseCode = "400",
-            description = "Token expired, not provided or already revoked",
+            description = "Токен истёк, не предоставлен или уже отменён",
 
             content = @Content(
                     mediaType = "application/json",
@@ -242,4 +248,131 @@ public class AuthenticationController {
                     .status(HttpStatus.OK)
                     .body(new Response(true, "Токен отменён"));
     }
+
+
+    @Operation(summary = "Проверка роли пользователя для загрузки резюме",
+        description = "Проверяет наличие токена и роль пользователя"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200",
+            description = "Доступ разрешён",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": true, \"description\": \"Разрешено\" }"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "401",
+            description = "С токеном что-то не так или неподходящая роль",
+
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"Доступ запрещён\" }"
+                    )
+                )
+            )
+        }
+    )
+    @GetMapping("/uploadCheck")
+    public ResponseEntity<Response> uploadCheck(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Role roleFromToken = null;
+
+        if (
+            !jwtService.isTokenValid(token) ||
+            revokeService.isTokenRevoked(token)
+        ) {
+            return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(new Response(false, "Токен не валиден или уже отменён"));
+        }
+
+        try {
+            roleFromToken = jwtService.getRoleFromJwt(token);
+        } catch (JwtException e) {
+            log.error(e.getMessage());
+
+            return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(new Response(false, "Не удалось получить роль из токена"));
+        }
+
+        if (
+            roleFromToken == Role.CANDIDATE ||
+            roleFromToken == Role.HR
+        ) {
+            return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new Response(true, "Разрешено"));
+        }
+
+        return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(new Response(false, "Доступ запрещён"));
+    } 
+
+
+    @Operation(summary = "Проверка роли пользователя поиска резюме",
+        description = "Проверяет наличие токена и роль пользователя"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200",
+            description = "Доступ разрешён",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": true, \"description\": \"Разрешено\" }"
+                    )
+                )
+            ),
+            @ApiResponse(responseCode = "401",
+            description = "С токеном что-то не так или неподходящая роль",
+
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(
+                        example = "{ \"success\": false, \"description\": \"Доступ запрещён\" }"
+                    )
+                )
+            )
+        }
+    )
+    @GetMapping("/findCheck")
+    public ResponseEntity<Response> findCheck(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Role roleFromToken = null;
+
+        if (
+            !jwtService.isTokenValid(token) ||
+            revokeService.isTokenRevoked(token)
+        ) {
+            return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(new Response(false, "Токен не валиден или уже отменён"));
+        }
+
+        try {
+            roleFromToken = jwtService.getRoleFromJwt(token);
+        } catch (JwtException e) {
+            log.error(e.getMessage());
+
+            return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(new Response(false, "Не удалось получить роль из токена"));
+        }
+
+        if (roleFromToken == Role.HR) {
+            return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new Response(true, "Разрешено"));
+        }
+
+        return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(new Response(false, "Доступ запрещён"));
+    } 
 }
