@@ -276,7 +276,8 @@ public class AuthenticationController {
             )
         }
     )
-    @GetMapping("/uploadCheck")
+    // @PostMapping("/uploadCheck")
+    @GetMapping("uploadCheck")
     public ResponseEntity<Response> uploadCheck(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
         Role roleFromToken = null;

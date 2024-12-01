@@ -15,7 +15,7 @@ services:
     ports:
        - "8080:8080"
     networks:
-        - auth-app-network
+      - backend-network
 
   db:
     image: postgres:latest
@@ -31,7 +31,7 @@ services:
     ports:
       - "5433:5432"
     networks:
-        - auth-app-network
+      - backend-network
 
   redis:
     image: redis:alpine3.20
@@ -40,7 +40,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-        - auth-app-network
+      - backend-network
 
 volumes:
   postgres_data:
@@ -48,3 +48,5 @@ volumes:
 networks:
   auth-app-network:
     driver: bridge
+  backend-network:
+    external: true
