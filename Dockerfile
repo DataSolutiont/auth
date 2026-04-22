@@ -1,12 +1,13 @@
-FROM maven:latest AS stage1
+# Этап сборки
+FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /auth_service
-COPY pom.xml /auth_service
-RUN mvn dependency:resolve
-COPY . /auth_service
-RUN mvn clean
-RUN mvn package -DskipTests
+COPY pom.xml .
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-FROM openjdk:21 AS final
-COPY --from=stage1 /auth_service/target/*.jar app.jar
+# Этап выполнения
+FROM eclipse-temurin:21-jre
+COPY --from=builder /auth_service/target/*.jar app.jar
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
