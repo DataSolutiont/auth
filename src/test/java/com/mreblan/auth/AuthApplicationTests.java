@@ -1,9 +1,14 @@
 package com.mreblan.auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -11,20 +16,41 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import com.mreblan.auth.controllers.AuthenticationController;
 import com.mreblan.auth.controllers.TestController;
+import com.mreblan.auth.services.impl.RedisService;   // <-- правильный импорт
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.hamcrest.Matchers.containsString;
 
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
-class AuthApplicationTests {
-
+@TestPropertySource(properties = {
+    // H2 in-memory database
+    "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password=",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.show-sql=true",
+    // Отключаем Redis авто-конфигурацию
+    "spring.data.redis.repositories.enabled=false",
+    "spring.autoconfigure.exclude=" +
+        "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
+        "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration," +
+        "org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration",
+    // Отключаем MinIO / S3
+    "com.amazonaws.s3.enabled=false",
+    "aws.s3.mock=true"
+})
+class AuthApplicationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,165 +61,165 @@ class AuthApplicationTests {
     @Autowired
     private TestController testController;
 
-	@Test
-	void candidateTest() throws Exception {
-		assertThat(authenticationController).isNotNull();
-		assertThat(testController).isNotNull();
+    // Мокаем RedisService, чтобы не было реальных вызовов Redis
+    @MockBean
+    private RedisService redisService;
 
-		final String username = "Lexa";
-		final String password = "secr3t";
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-		StringBuilder jsonRequest = new StringBuilder();
+    @BeforeEach
+    void setUp() {
+        // Настраиваем мок: isTokenRevoked всегда возвращает false (токен не отозван)
+        when(redisService.isTokenRevoked(anyString())).thenReturn(false);
+    }
 
-		jsonRequest.append("{\n");
-		jsonRequest.append("\"fio\": \"Петров Алексей Евгеньевич\",\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append("\"email\": \"lexa@gmail.com\",\n");
-		jsonRequest.append(String.format("\"password\": \"%s\",\n", password));
-		jsonRequest.append("\"role\": \"CANDIDATE\"\n");
-		jsonRequest.append("}");
+    @Test
+    void candidateTest() throws Exception {
+        assertThat(authenticationController).isNotNull();
+        assertThat(testController).isNotNull();
 
-		mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signup")
+        final String username = "Lexa";
+        final String password = "secr3t";
+
+        String signUpJson = String.format("""
+                {
+                    "fio": "Петров Алексей Евгеньевич",
+                    "username": "%s",
+                    "email": "lexa@gmail.com",
+                    "password": "%s",
+                    "role": "CANDIDATE"
+                }
+                """, username, password);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-                        .andExpect(content().string(containsString("Пользователь создан")));
+                        .content(signUpJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
 
-		jsonRequest = new StringBuilder();
-		jsonRequest.append("{\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append(String.format("\"password\": \"%s\"\n", password));
-		jsonRequest.append("}");
+        String signInJson = String.format("""
+                {
+                    "username": "%s",
+                    "password": "%s"
+                }
+                """, username, password);
 
-
-		MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signin")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-        				.andReturn();
+                        .content(signInJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-        String token = result.getResponse().getContentAsString();
-        log.info("RESPONSE CONTENT: {}", token);
+        String jsonResponse = result.getResponse().getContentAsString();
+        String token = objectMapper.readTree(jsonResponse).get("token").asText();
+        log.info("Token: {}", token);
 
-		mockMvc.perform(MockMvcRequestBuilders
-						.get("/test/name")
-						.header("Authorization", String.format("Bearer %s", token)))
-						.andDo(MockMvcResultHandlers.print())
-						.andExpect(status().isOk())
-						.andExpect(content().string(containsString("TEST NAME")));
-		
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/name")
+                        .header("Authorization", "Bearer " + token))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("TEST NAME")));
+    }
 
-	}
+    @Test
+    void hrTest() throws Exception {
+        assertThat(authenticationController).isNotNull();
+        assertThat(testController).isNotNull();
 
-	@Test
-	void hrTest() throws Exception {
-		assertThat(authenticationController).isNotNull();
-		assertThat(testController).isNotNull();
+        final String username = "L3no4ka";
+        final String password = "mySecr3tP4assword";
 
-		final String username = "L3no4ka";
-		final String password = "mySecr3tP4assword";
+        String signUpJson = String.format("""
+                {
+                    "fio": "Иванова Елена Владимировна",
+                    "username": "%s",
+                    "email": "lenka@gmail.com",
+                    "password": "%s",
+                    "role": "HR"
+                }
+                """, username, password);
 
-		StringBuilder jsonRequest = new StringBuilder();
-
-		jsonRequest.append("{\n");
-		jsonRequest.append("\"fio\": \"Иванова Елена Владимировна\",\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append("\"email\": \"lenka@gmail.com\",\n");
-		jsonRequest.append(String.format("\"password\": \"%s\",\n", password));
-		jsonRequest.append("\"role\": \"HR\"\n");
-		jsonRequest.append("}");
-
-		mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signup")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-                        .andExpect(content().string(containsString("Пользователь создан")));
+                        .content(signUpJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
 
-		jsonRequest = new StringBuilder();
-		jsonRequest.append("{\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append(String.format("\"password\": \"%s\"\n", password));
-		jsonRequest.append("}");
+        String signInJson = String.format("""
+                {
+                    "username": "%s",
+                    "password": "%s"
+                }
+                """, username, password);
 
-
-		MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signin")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-        				.andReturn();
+                        .content(signInJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-        String token = result.getResponse().getContentAsString();
-        log.info("RESPONSE CONTENT: {}", token);
+        String jsonResponse = result.getResponse().getContentAsString();
+        String token = objectMapper.readTree(jsonResponse).get("token").asText();
+        log.info("Token: {}", token);
 
-		mockMvc.perform(MockMvcRequestBuilders
-						.get("/test/name")
-						.header("Authorization", String.format("Bearer %s", token)))
-						.andDo(MockMvcResultHandlers.print())
-						.andExpect(status().isOk())
-						.andExpect(content().string(containsString("TEST NAME")));
-		
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/name")
+                        .header("Authorization", "Bearer " + token))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("TEST NAME")));
+    }
 
-	}
+    @Test
+    void adminTest() throws Exception {
+        assertThat(authenticationController).isNotNull();
+        assertThat(testController).isNotNull();
 
-	@Test
-	void adminTest() throws Exception {
-		assertThat(authenticationController).isNotNull();
-		assertThat(testController).isNotNull();
+        final String username = "XxX_van3k_xXx";
+        final String password = "c00l_P455";
 
-		final String username = "XxX_van3k_xXx";
-		final String password = "c00l_P455";
+        String signUpJson = String.format("""
+                {
+                    "fio": "Ебланов Иван Иванович",
+                    "username": "%s",
+                    "email": "ivan@yandex.ru",
+                    "password": "%s",
+                    "role": "ADMIN"
+                }
+                """, username, password);
 
-		StringBuilder jsonRequest = new StringBuilder();
-
-		jsonRequest.append("{\n");
-		jsonRequest.append("\"fio\": \"Ебланов Иван Иванович\",\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append("\"email\": \"ivan@yandex.ru\",\n");
-		jsonRequest.append(String.format("\"password\": \"%s\",\n", password));
-		jsonRequest.append("\"role\": \"ADMIN\"\n");
-		jsonRequest.append("}");
-
-		mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signup")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-                        .andExpect(content().string(containsString("Пользователь создан")));
+                        .content(signUpJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
 
-		jsonRequest = new StringBuilder();
-		jsonRequest.append("{\n");
-		jsonRequest.append(String.format("\"username\": \"%s\",\n", username));
-		jsonRequest.append(String.format("\"password\": \"%s\"\n", password));
-		jsonRequest.append("}");
+        String signInJson = String.format("""
+                {
+                    "username": "%s",
+                    "password": "%s"
+                }
+                """, username, password);
 
-
-		MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/signin")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest.toString()))
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isOk())
-        				.andReturn();
+                        .content(signInJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-        String token = result.getResponse().getContentAsString();
-        log.info("RESPONSE CONTENT: {}", token);
+        String jsonResponse = result.getResponse().getContentAsString();
+        String token = objectMapper.readTree(jsonResponse).get("token").asText();
+        log.info("Token: {}", token);
 
-		mockMvc.perform(MockMvcRequestBuilders
-						.get("/test/name")
-						.header("Authorization", String.format("Bearer %s", token)))
-						.andDo(MockMvcResultHandlers.print())
-						.andExpect(status().isOk())
-						.andExpect(content().string(containsString("TEST NAME")));
-		
-
-	}
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/name")
+                        .header("Authorization", "Bearer " + token))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("TEST NAME")));
+    }
 }
